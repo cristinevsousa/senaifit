@@ -1,7 +1,5 @@
 package senaifit.controllers;
 
-import java.util.Optional;
-
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,36 +23,27 @@ public class ClienteController {
     private ClienteService clienteService;
 
     @PostMapping("/cliente/")
-    public ResponseEntity<String> salvaCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
+    public ResponseEntity<String> salvaCliente(@Valid @RequestBody ClienteDTO cliente) {
 
-	Cliente cliente = new Cliente();
-	cliente.setAltura(clienteDTO.getAltura());
-	cliente.setCpf(clienteDTO.getCpf());
-	cliente.setDataNasc(clienteDTO.getDataNasc());
-	cliente.setEndereco(clienteDTO.getEndereco());
-	cliente.setId(clienteDTO.getId());
-	cliente.setNome(clienteDTO.getNome());
-	cliente.setPeso(clienteDTO.getPeso());
-	cliente.setSexo(clienteDTO.getSexo());
+	String msg = this.clienteService.cadastraCliente(cliente);
 
-	this.clienteService.cadastraCliente(cliente);
-
-	return new ResponseEntity<>("Cliente cadastrado com sucesso!", HttpStatus.CREATED);
+	return new ResponseEntity<>(msg, HttpStatus.CREATED);
     }
 
     @GetMapping("/cliente/{id}")
     public ResponseEntity<Cliente> obtemCliente(@PathVariable String id) {
 
-	Optional<Cliente> cliente = this.clienteService.obtemCliente(Long.parseLong(id));
-
-	return ResponseEntity.of(cliente);
+	return this.clienteService.obtemCliente(Long.parseLong(id)).map(record -> ResponseEntity.ok().body(record))
+		.orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/cliente/remove/{id}")
+    @DeleteMapping("/cliente/{id}")
     private ResponseEntity<String> deletaClientePorId(@PathVariable String id) {
 
-	this.clienteService.deletaClientePorId(Long.parseLong(id));
-
-	return new ResponseEntity<>("Cliente removido com sucesso", HttpStatus.ACCEPTED);
+	boolean retorno = this.clienteService.deletaClientePorId(Long.parseLong(id));
+	if (retorno == true) {
+	    return new ResponseEntity<>("Cliente removido com sucesso", HttpStatus.ACCEPTED);
+	}
+	return new ResponseEntity<>("Id não encontrado", HttpStatus.NOT_FOUND);
     }
 }

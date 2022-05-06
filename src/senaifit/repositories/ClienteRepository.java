@@ -12,5 +12,4 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
     public Optional<Cliente> findById(Long id);
 
-//    public List<Checkin> findAllByClienteId(Long clienteId);
 }

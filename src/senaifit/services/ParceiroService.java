@@ -2,32 +2,54 @@ package senaifit.services;
 
 import java.util.Optional;
 
-import javax.validation.Valid;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import senaifit.DTO.ParceiroDTO;
 import senaifit.entities.Parceiro;
 import senaifit.repositories.ParceiroRepository;
 
 @Service
 public class ParceiroService {
 
-    @Autowired
     private ParceiroRepository parceiroRepo;
 
-    public void cadastraParceiro(@Valid Parceiro parceiro) {
+    public ParceiroService(ParceiroRepository parceiroRepo) {
+	this.parceiroRepo = parceiroRepo;
+    }
 
-	this.parceiroRepo.save(parceiro);
+    public String cadastraParceiro(ParceiroDTO parceiroDTO) {
+
+	Parceiro parceiro = new Parceiro();
+	parceiro.setEndereco(parceiroDTO.getEndereco());
+	parceiro.setNome(parceiroDTO.getNome());
+	parceiro.setDataCadastro(parceiroDTO.getDataCadastro());
+	parceiro.setId(parceiroDTO.getId());
+
+	if (!(parceiro.getNome().isEmpty() && parceiro.equals(null))) {
+	    this.parceiroRepo.save(parceiro);
+	    return "Parceiro cadastrado com sucesso";
+	}
+
+	return "Erro ao cadastrar parceiro";
     }
 
     public Optional<Parceiro> obtemParceiro(long parceiroId) {
 
-	return this.parceiroRepo.findById(parceiroId);
+	Optional<Parceiro> parceiro = this.parceiroRepo.findById(parceiroId);
+
+	if (parceiro.isPresent()) {
+	    return parceiro;
+	}
+	return Optional.empty();
     }
 
-    public void deletaParceiroPorId(long id) {
+    public boolean deletaParceiroPorId(long parceiroId) {
 
-	this.parceiroRepo.deleteById(id);
+	Optional<Parceiro> parceiro = obtemParceiro(parceiroId);
+	if (parceiro.isPresent()) {
+	    this.parceiroRepo.deleteById(parceiroId);
+	    return true;
+	}
+	return false;
     }
 }

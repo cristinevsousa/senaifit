@@ -29,10 +29,7 @@ public interface CheckinRepository extends JpaRepository<Checkin, Long> {
 	    @Param("dataInicial") LocalDateTime dataInicial, @Param("dataFinal") LocalDateTime dataFinal);
 
     @Query(value = "SELECT c.cliente_id FROM CHECKIN c WHERE c.data_checkin BETWEEN :dataInicial AND :dataFinal", nativeQuery = true)
-    public List<Long> listaIdsClientes(@Param("dataInicial") LocalDateTime dataInicial,
+    public Optional<List<Long>> listaIdsClientes(@Param("dataInicial") LocalDateTime dataInicial,
 	    @Param("dataFinal") LocalDateTime dataFinal);
 
-    @Query(value = "SELECT * FROM CHECKIN c WHERE c.data_checkin BETWEEN :dataInicial AND :dataFinal", nativeQuery = true)
-    public List<Checkin> listaCheckinsPorData(@Param("dataInicial") LocalDateTime dataInicial,
-	    @Param("dataFinal") LocalDateTime dataFinal);
 }

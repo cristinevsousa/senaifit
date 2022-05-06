@@ -22,11 +22,9 @@ public class Checkin {
     private Long id;
 
     @ManyToOne
-    @NotNull
     private Cliente cliente;
 
     @ManyToOne
-    @NotNull
     private Parceiro parceiro;
 
     @Column(name = "data_checkin", nullable = false, columnDefinition = "TIMESTAMP")
@@ -34,7 +32,6 @@ public class Checkin {
     private LocalDateTime data;
 
     @ManyToOne
-    @NotNull
     private Atividade atividade;
 
     @Column(name = "tempo_atividade")

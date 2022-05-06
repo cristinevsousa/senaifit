@@ -10,8 +10,10 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @MappedSuperclass
 public abstract class Pessoa extends Usuario {
 

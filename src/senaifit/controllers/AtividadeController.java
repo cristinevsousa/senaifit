@@ -1,10 +1,7 @@
 package senaifit.controllers;
 
-import java.util.Optional;
-
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,43 +18,37 @@ import senaifit.services.AtividadeService;
 @RestController
 public class AtividadeController {
 
-    @Autowired
     private AtividadeService atividadeService;
 
+    public AtividadeController(AtividadeService atividadeService) {
+	this.atividadeService = atividadeService;
+    }
+
     @PostMapping("/atividade/")
-    public ResponseEntity<String> salvaAtividade(@Valid @RequestBody AtividadeDTO atividadeDTO) {
+    public ResponseEntity<String> cadastraAtividade(@Valid @RequestBody AtividadeDTO atividade) {
 
-	Atividade atividade = new Atividade();
-	atividade.setNome(atividadeDTO.getNome());
+	String msg = this.atividadeService.cadastraAtividade(atividade);
 
-	this.atividadeService.salvaAtividade(atividade);
-
-	return new ResponseEntity<>("Atividade cadastrada com sucesso", HttpStatus.CREATED);
-
+	if (msg.contains("Erro")) {
+	    return new ResponseEntity<>(msg, HttpStatus.BAD_REQUEST);
+	}
+	return new ResponseEntity<>(msg, HttpStatus.CREATED);
     }
 
     @GetMapping("/atividade/{id}")
     private ResponseEntity<Atividade> obtemAtividade(@PathVariable String id) {
 
-	Optional<Atividade> atividade = this.atividadeService.obtemAtividade(Long.parseLong(id));
-
-	return ResponseEntity.of(atividade);
+	return this.atividadeService.obtemAtividade(Long.parseLong(id)).map(record -> ResponseEntity.ok().body(record))
+		.orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/atividade/{nome}")
-    private ResponseEntity<Atividade> obtemAtividadePorNome(@PathVariable String nome) {
-
-	Optional<Atividade> atividade = this.atividadeService.obtemAtividadePorNome(String.valueOf(nome));
-
-	return ResponseEntity.of(atividade);
-    }
-
-    @DeleteMapping("/atividade/remove/{id}")
+    @DeleteMapping("/atividade/{id}")
     private ResponseEntity<String> deletaAtividadePorId(@PathVariable String id) {
 
-	this.atividadeService.deletaAtividadePorId(Long.parseLong(id));
-
-	return new ResponseEntity<>("Atividade removida com sucesso", HttpStatus.ACCEPTED);
+	boolean retorno = this.atividadeService.deletaAtividadePorId(Long.parseLong(id));
+	if (retorno == true) {
+	    return new ResponseEntity<>("Atividade removida com sucesso", HttpStatus.ACCEPTED);
+	}
+	return new ResponseEntity<>("Id não encontrado", HttpStatus.NOT_FOUND);
     }
-
 }

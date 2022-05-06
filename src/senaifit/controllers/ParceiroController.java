@@ -1,10 +1,7 @@
 package senaifit.controllers;
 
-import java.util.Optional;
-
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,35 +18,37 @@ import senaifit.services.ParceiroService;
 @RestController
 public class ParceiroController {
 
-    @Autowired
     private ParceiroService parceiroService;
 
+    public ParceiroController(ParceiroService parceiroService) {
+	this.parceiroService = parceiroService;
+    }
+
     @PostMapping("/parceiro/")
-    public ResponseEntity<String> salvaParceiro(@Valid @RequestBody ParceiroDTO parceiroDTO) {
+    public ResponseEntity<String> cadastraParceiro(@Valid @RequestBody ParceiroDTO parceiro) {
 
-	Parceiro parceiro = new Parceiro();
-	parceiro.setEndereco(parceiroDTO.getEndereco());
-	parceiro.setNome(parceiroDTO.getNome());
-	parceiro.setDataCadastro(parceiroDTO.getDataCadastro());
-	parceiro.setId(parceiroDTO.getId());
+	String msg = this.parceiroService.cadastraParceiro(parceiro);
 
-	this.parceiroService.cadastraParceiro(parceiro);
-
-	return new ResponseEntity<>("Parceiro cadastrado com sucesso!", HttpStatus.CREATED);
+	if (msg.contains("Erro")) {
+	    return new ResponseEntity<>(msg, HttpStatus.BAD_REQUEST);
+	}
+	return new ResponseEntity<>(msg, HttpStatus.CREATED);
     }
 
     @GetMapping("/parceiro/{id}")
-    public ResponseEntity<Parceiro> obtemParceiro(@PathVariable String id) {
+    private ResponseEntity<Parceiro> obtemParceiro(@PathVariable String id) {
 
-	Optional<Parceiro> parceiro = this.parceiroService.obtemParceiro(Long.parseLong(id));
-	return ResponseEntity.of(parceiro);
+	return this.parceiroService.obtemParceiro(Long.parseLong(id)).map(record -> ResponseEntity.ok().body(record))
+		.orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/parceiro/remove/{id}")
+    @DeleteMapping("/parceiro/{id}")
     private ResponseEntity<String> deletaParceiroPorId(@PathVariable String id) {
 
-	this.parceiroService.deletaParceiroPorId(Long.parseLong(id));
-
-	return new ResponseEntity<>("Parceiro removido com sucesso", HttpStatus.ACCEPTED);
+	boolean retorno = this.parceiroService.deletaParceiroPorId(Long.parseLong(id));
+	if (retorno == true) {
+	    return new ResponseEntity<>("Parceiro removido com sucesso", HttpStatus.ACCEPTED);
+	}
+	return new ResponseEntity<>("Id não encontrado", HttpStatus.NOT_FOUND);
     }
 }

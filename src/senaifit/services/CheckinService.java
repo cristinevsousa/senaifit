@@ -6,14 +6,14 @@ import java.time.Period;
 import java.util.List;
 import java.util.Optional;
 
-import javax.validation.Valid;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import senaifit.DTO.CheckinDTO;
+import senaifit.entities.Atividade;
 import senaifit.entities.Checkin;
 import senaifit.entities.Cliente;
 import senaifit.entities.FaixaEtaria;
+import senaifit.entities.Parceiro;
 import senaifit.repositories.CheckinRepository;
 
 @Service
@@ -26,68 +26,108 @@ public class CheckinService {
     private static final int META_GRUPO2 = 60;
     private static final int META_GRUPO3 = 30;
 
-    @Autowired
     private CheckinRepository checkinRepo;
 
-    public void salvaCheckin(@Valid Checkin checkin) {
-	this.checkinRepo.save(checkin);
+    private ClienteService clienteService;
+
+    private ParceiroService parceiroService;
+
+    private AtividadeService atividadeService;
+
+    public CheckinService(CheckinRepository checkinRepo, ClienteService clienteService, ParceiroService parceiroService,
+	    AtividadeService atividadeService) {
+	this.checkinRepo = checkinRepo;
+	this.clienteService = clienteService;
+	this.parceiroService = parceiroService;
+	this.atividadeService = atividadeService;
     }
 
-    public int somaMinutos(long id, LocalDateTime dataInicial, LocalDateTime dataFinal) {
+    public String salvaCheckin(CheckinDTO checkinDTO) {
 
-	Optional<Integer> resultado = this.checkinRepo.somaMinutos(id, dataInicial, dataFinal);
+	long clienteId = checkinDTO.getClienteId();
+	Optional<Cliente> cliente = this.clienteService.obtemCliente(clienteId);
+
+	if (cliente.isEmpty()) {
+	    return "Requisiçao inválida, CLIENTE não encontrado!";
+	}
+
+	long parceiroId = checkinDTO.getParceiroId();
+	Optional<Parceiro> parceiro = this.parceiroService.obtemParceiro(parceiroId);
+
+	if (parceiro.isEmpty()) {
+	    return "Requisiçao inválida, PARCEIRO não encontrado!";
+	}
+
+	long atividadeId = 1;
+	Optional<Atividade> atividade = this.atividadeService.obtemAtividade(atividadeId);
+
+	if (atividade.isEmpty()) {
+	    return "Requisiçao inválida, ATIVIDADE não encontrada!";
+	}
+
+	Checkin checkin = new Checkin();
+
+	String msgCheckin = this.verificaCheckin(cliente, checkin);
+
+	checkin.setCliente(cliente.get());
+	checkin.setParceiro(parceiro.get());
+	checkin.setAtividade(atividade.get());
+	checkin.setId(clienteId);
+
+	this.checkinRepo.save(checkin);
+
+	return "Checkin realizado com sucesso! " + msgCheckin;
+    }
+
+    public Optional<Checkin> obtemCheckin(long checkinId) {
+
+	Optional<Checkin> checkin = this.checkinRepo.findById(checkinId);
+
+	if (checkin.isPresent()) {
+	    return checkin;
+	}
+	return Optional.empty();
+    }
+
+    public boolean deletaCheckinPorId(long checkinId) {
+
+	Optional<Checkin> checkin = obtemCheckin(checkinId);
+	if (checkin.isPresent()) {
+	    this.checkinRepo.deleteById(checkinId);
+	    return true;
+	}
+	return false;
+    }
+
+    public Optional<Integer> somaMinutos(long clienteId, LocalDateTime dataInicial, LocalDateTime dataFinal) {
+
+	Optional<Integer> resultado = this.checkinRepo.somaMinutos(clienteId, dataInicial, dataFinal);
 
 	if (resultado.isPresent()) {
-	    return resultado.orElse(0);
+	    return resultado;
 	}
-
-	return resultado.get();
+	return Optional.of(0);
     }
 
-    public int contaCheckinsCliente(long id, LocalDateTime dataInicial, LocalDateTime dataFinal) {
+    public Optional<Integer> contaCheckinsCliente(long clienteId, LocalDateTime dataInicial, LocalDateTime dataFinal) {
 
-	Optional<Integer> resultado = this.checkinRepo.contaCheckinsCliente(id, dataInicial, dataFinal);
+	Optional<Integer> resultado = this.checkinRepo.contaCheckinsCliente(clienteId, dataInicial, dataFinal);
 
-	if (resultado.isEmpty()) {
-	    return resultado.orElse(0);
-	}
-
-	return resultado.get();
+	return resultado;
     }
 
-    public int contaCheckinsParceiro(long id, LocalDateTime dataInicial, LocalDateTime dataFinal) {
+    public Optional<Integer> contaCheckinsParceiro(long parceiroId, LocalDateTime dataInicial,
+	    LocalDateTime dataFinal) {
 
-	Optional<Integer> resultado = this.checkinRepo.contaCheckinsParceiro(id, dataInicial, dataFinal);
+	Optional<Integer> resultado = this.checkinRepo.contaCheckinsParceiro(parceiroId, dataInicial, dataFinal);
 
-	if (resultado.isEmpty()) {
-	    return resultado.orElse(0);
-	}
-
-	return resultado.get();
+	return resultado;
     }
 
-    public List<Checkin> listaCheckinsPorData(int mes, int ano) {
+    public Optional<List<Long>> listaIdsClientes(LocalDateTime dataInicial, LocalDateTime dataFinal) {
 
-	int proximoMes = mes + 1;
-	LocalDateTime dataInicial = LocalDateTime.of(ano, mes, 1, 0, 0, 0);
-
-	if (proximoMes == 13) {
-	    proximoMes = 1;
-	    ano += 1;
-	}
-	LocalDateTime dataFinal = LocalDateTime.of(ano, proximoMes, 1, 0, 0, 0);
-
-	return this.checkinRepo.listaCheckinsPorData(dataInicial, dataFinal);
-    }
-
-    public List<Long> listaIdsClientes(LocalDateTime dataInicial, LocalDateTime dataFinal) {
-
-	return this.checkinRepo.listaIdsClientes(dataInicial, dataFinal);
-    }
-
-    public List<Checkin> listaTodosCheckins() {
-
-	return this.checkinRepo.findAll();
+	Optional<List<Long>> idsCliente = this.checkinRepo.listaIdsClientes(dataInicial, dataFinal);
+	return idsCliente;
     }
 
     public int geraTempoSugerido(Optional<Cliente> cliente, Checkin checkin) {
@@ -105,7 +145,6 @@ public class CheckinService {
 	    tempoSugerido = TEMPO_GRUPO3;
 	    checkin.setTempoAtividade(tempoSugerido);
 	}
-
 	return tempoSugerido;
     }
 
@@ -130,7 +169,6 @@ public class CheckinService {
 	    faixaEtaria = FaixaEtaria.GRUPO3;
 	    checkin.setFaixaEtaria(faixaEtaria);
 	}
-
 	return faixaEtaria;
     }
 
@@ -141,29 +179,27 @@ public class CheckinService {
 	LocalDateTime dataHoje = LocalDateTime.now();
 	LocalDateTime dataInicial = dataHoje.minusDays(6);
 
-	int minutosSemana = this.somaMinutos(clienteId, dataInicial, dataHoje);
+	Optional<Integer> minutosSemana = this.somaMinutos(clienteId, dataInicial, dataHoje);
 
-	int tempoSugerido = geraTempoSugerido(cliente, checkin);
+	if (minutosSemana.isPresent()) {
 
-	String msgAviso = "Cuidado! O excesso de atividade física também pode fazer mal para sua saúde!";
-	String msgSugestao = "Sua recomendação de atividade é: Caminhada" + ", " + tempoSugerido + " minutos";
+	    int tempoSugerido = geraTempoSugerido(cliente, checkin);
 
-	if (tempoSugerido == TEMPO_GRUPO1 && minutosSemana > META_GRUPO1) {
-	    return msgAviso;
+	    String msgAviso = "Cuidado! O excesso de atividade física também pode fazer mal para sua saúde!";
+	    String msgSugestao = "Sua recomendação de atividade é: Caminhada" + ", " + tempoSugerido + " minutos";
 
-	} else if (tempoSugerido == TEMPO_GRUPO2 && minutosSemana > META_GRUPO2) {
-	    return msgAviso;
+	    if (tempoSugerido == TEMPO_GRUPO1 && minutosSemana.get() > META_GRUPO1) {
+		return msgAviso;
 
-	} else if (tempoSugerido == TEMPO_GRUPO3 && minutosSemana > META_GRUPO3) {
-	    return msgAviso;
+	    } else if (tempoSugerido == TEMPO_GRUPO2 && minutosSemana.get() > META_GRUPO2) {
+		return msgAviso;
 
-	} else {
-	    return msgSugestao;
+	    } else if (tempoSugerido == TEMPO_GRUPO3 && minutosSemana.get() > META_GRUPO3) {
+		return msgAviso;
+	    } else {
+		return msgSugestao;
+	    }
 	}
-    }
-
-    public void deletaCheckinPorId(long id) {
-
-	this.checkinRepo.deleteById(id);
+	return null;
     }
 }

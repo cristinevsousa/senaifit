@@ -2,25 +2,32 @@ package senaifit.DTO;
 
 import java.time.LocalDateTime;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
 import lombok.Data;
+import senaifit.entities.Endereco;
 import senaifit.entities.TipoUsuario;
-import senaifit.entities.Usuario;
 
 @Data
-public class ParceiroDTO extends Usuario {
+public class ParceiroDTO {
 
+    private Long id;
+
+    @NotEmpty
+    private String nome;
+
+    @NotNull
+    private Endereco endereco;
+
+    @NotEmpty
+    private TipoUsuario tipoUsuario;
+
+    @NotNull
     private LocalDateTime dataCadastro;
 
-    public ParceiroDTO() {
-	super(TipoUsuario.PARCEIRO);
-    }
-
-    public LocalDateTime getDataCadastro() {
-	return dataCadastro;
-    }
-
-    public void setDataCadastro(LocalDateTime dataCadastro) {
+    public ParceiroDTO(@NotEmpty TipoUsuario tipoUsuario, @NotNull LocalDateTime dataCadastro) {
+	this.tipoUsuario = tipoUsuario;
 	this.dataCadastro = dataCadastro;
     }
-
 }

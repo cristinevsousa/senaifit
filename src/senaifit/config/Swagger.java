@@ -14,8 +14,9 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 public class Swagger {
 
     @Bean
-    public Docket api() {
-	return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.any())
-		.paths(PathSelectors.any()).build();
+    public Docket forumApi() {
+	return new Docket(DocumentationType.SWAGGER_2).select()
+		.apis(RequestHandlerSelectors.basePackage("senaifit.controllers")).paths(PathSelectors.ant("/**"))
+		.build();
     }
 }
